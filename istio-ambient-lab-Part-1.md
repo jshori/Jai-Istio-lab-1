@@ -171,6 +171,11 @@ Both pods showed up with a protocol called `HBONE`, while everything outside the
 
 This is the boring but important part of Istio: it encrypts traffic between your services automatically, without anyone having to remember to do it.
 
+```bash
+HBONE = HTTP-Based Overlay Network Encapsulation.
+It's the protocol Istio's Ambient mode uses to tunnel traffic between ztunnel instances, wrapping the original connection inside an HTTP/2 CONNECT tunnel with mTLS applied.
+```
+
 ## The moment it actually made sense
 
 Encryption is nice, but it didn't feel like a "why would a company use this" moment until I tried the next thing.
