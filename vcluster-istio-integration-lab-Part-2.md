@@ -68,6 +68,10 @@ integrations:
 
 The `integrations.istio` block is the important part. It tells vCluster's syncer to watch for `DestinationRule`, `Gateway`, and `VirtualService` objects created inside the tenant cluster, and copy them down to the Control Plane Cluster automatically.
 
+- VirtualService decides where traffic should go. For example, send 95% of requests to the old version of a service and 5% to a new one, or route based on a header in the request.
+- DestinationRule works alongside a VirtualService. It defines what a "version" of a service actually means (by matching pod labels), and sets policies like load balancing behavior for that destination.
+- Gateway is the entry point for traffic coming from outside the cluster, the actual public internet, into the mesh. It is a separate concern from the two above, which only deal with traffic that is already inside the mesh.
+
 One prerequisite worth knowing about ahead of time: the integration depends on a Kubernetes CRD called `ReferenceGrant`, part of the Gateway API, a separate CRD set from core Kubernetes and from Istio itself. It needs to be installed on the host cluster before creating the tenant cluster:
 
 ```bash
