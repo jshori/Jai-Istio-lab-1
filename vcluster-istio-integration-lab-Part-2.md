@@ -66,7 +66,7 @@ integrations:
           enabled: true
 ```
 
-The `integrations.istio` block is the important part. It tells vCluster's syncer to watch for `DestinationRule`, `Gateway`, and `VirtualService` objects created inside the tenant cluster, and copy them down to the Control Plane Cluster automatically.
+The `integrations.istio` block is the important part. It tells vCluster's syncer to watch for `DestinationRule`, `Gateway`, and `VirtualService` objects created inside the tenant cluster, and copy them down to the Control Plane Cluster automatically. Quick explanation of each, since these are the actual building blocks of Istio's traffic rules:
 
 - VirtualService decides where traffic should go. For example, send 95% of requests to the old version of a service and 5% to a new one, or route based on a header in the request.
 - DestinationRule works alongside a VirtualService. It defines what a "version" of a service actually means (by matching pod labels), and sets policies like load balancing behavior for that destination.
