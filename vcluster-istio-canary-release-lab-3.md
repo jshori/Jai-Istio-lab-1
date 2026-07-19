@@ -2,7 +2,7 @@
 
 This is the third post in this series. In the first, I set up Istio in Ambient mode from scratch and proved it encrypts traffic and enforces access rules automatically. In the second, I proved a vCluster tenant cluster can share that same Istio installation, without installing its own copy.
 
-This post tackles a real use case I mentioned in the first post but never actually built.
+This post tackles a real use case I mentioned in the first post.
 
 Here is the idea, with an everyday example. Imagine a company has an internal checkout service, and that checkout service needs to call a payment service to process an order. The team building the payment service wants to release a new version, but instead of switching every single call over at once, which is risky if something is broken, they do something safer: they let a small number of calls, say 5 out of every 100, quietly go to the new version, while the rest keep going to the version that already works fine. If the new version turns out to have a bug, the team can switch every call straight back to the old version in seconds, no code changes, no restarting anything, just flipping a setting. This is a common, everyday practice at real companies, and it has a name: a canary release.
 
