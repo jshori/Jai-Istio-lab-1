@@ -4,9 +4,9 @@ This is the third post in this series. In the first, I set up Istio in Ambient m
 
 This post tackles a real use case I mentioned in the first post.
 
-Here is the idea, with an everyday example. Imagine a company has an internal checkout service, and that checkout service needs to call a payment service to process an order. The team building the payment service wants to release a new version, but instead of switching every single call over at once, which is risky if something is broken, they do something safer: they let a small number of calls, say 5 out of every 100, quietly go to the new version, while the rest keep going to the version that already works fine. If the new version turns out to have a bug, the team can switch every call straight back to the old version in seconds, no code changes, no restarting anything, just flipping a setting. This is a common, everyday practice at real companies, and it has a name: a canary release.
+Here is the idea, with an everyday example. Imagine a company has an internal checkout service, and that checkout service needs to call a payment service to process an order. The team building the payment service wants to release a new version, but instead of switching every single call over at once, which is risky if something is broken, they do something safer. They let a small number of calls, say 5 out of every 100, quietly go to the new version, while the rest keep going to the version that already works fine. If the new version turns out to have a bug, the team can switch every call straight back to the old version in seconds, no code changes, no restarting anything, just flipping a setting. This is a common, everyday practice at real companies, and it has a name: a canary release.
 
-This kind of traffic, one internal service calling another internal service, all inside the same cluster, is sometimes called east-west traffic, as opposed to traffic coming in from outside the cluster, like a real customer's browser, which is called north-south traffic. This post is specifically about the east-west kind, splitting traffic between two internal services. I wanted to build it the same way as the last post: written entirely from inside an isolated tenant cluster, not directly on the shared host.
+This kind of traffic, one internal service calling another internal service, all inside the same cluster, is sometimes called east-west traffic, as opposed to traffic coming in from outside the cluster, like a real customer's browser, which is called north-south traffic. This post is specifically about the east-west kind, splitting traffic between two internal services.
 
 ## The two building blocks: VirtualService and DestinationRule
 
@@ -16,7 +16,7 @@ Before touching any commands, it helps to know what these two objects actually d
 
 **DestinationRule** works alongside a VirtualService. It groups pods into smaller, named groups called subsets, based on their labels, and this is how it defines what a "version" of a service actually means. For example, it can say "any pod labeled `version: v1` belongs to a group called v1." A VirtualService can only send traffic to a subset if a DestinationRule has already defined that subset, otherwise the name would not mean anything.
 
-Both of these are just written rules, not something that actively runs. On their own, they do not do any work, they just sit there as instructions. That difference matters later.
+Both of these are just written rules and sit there as instructions.
 
 ## Creating a fresh tenant cluster for this lab
 
