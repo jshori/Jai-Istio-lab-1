@@ -60,14 +60,14 @@ vcluster connect tc-istio -n loft-default-v-tc-istio
 
 To keep the lab simple, I did not use a real checkout or payment service. I used two versions of plain nginx instead, each serving different content so I could tell which one answered a request. The idea is the same either way, one service, two versions, calling it from another pod inside the same cluster.
 
-First, a namespace, labeled for the mesh:
+First, a namespace, labeled for the mesh:(it is what tells Istio "pay attention to any pod created inside this namespace, and start protecting its traffic)
 
 ```bash
 kubectl create namespace demo
 kubectl label namespace demo istio.io/dataplane-mode=ambient
 ```
 
-A ConfigMap per version, so each serves different content:
+A ConfigMap per version, so each serves different content:(I am using config to store a tiny HTML page for each version)
 
 ```bash
 kubectl create configmap nginx-v1 -n demo --from-literal=index.html="<h1>Version 1 (stable)</h1>"
