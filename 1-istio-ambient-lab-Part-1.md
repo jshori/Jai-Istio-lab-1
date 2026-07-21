@@ -348,6 +348,8 @@ RBAC: access denied
 
 GET went through, POST was rejected, with a real, explicit RBAC message this time, rather than a plain connection reset, since the waypoint could actually read the request and made a genuine decision about it. Once the waypoint was in place, the exact same rule worked correctly.
 
+One more small thing worth knowing. Every AuthorizationPolicy in this post only applied to one namespace, `demo`, since that is the namespace it was created in. This is the normal, default behavior. If you want a rule to apply everywhere in the mesh, to every namespace at once, you place it in a special namespace instead, usually called `istio-system`. That one namespace is treated as the mesh-wide spot, so anything created there applies to all namespaces, not just one.
+
 ## Where this connects to my actual job
 
 I work with multi-tenant Kubernetes platforms built on vCluster, where many isolated tenant clusters run on top of one shared cluster. A natural question came up while I was doing this lab: does every tenant need to install their own Istio?
