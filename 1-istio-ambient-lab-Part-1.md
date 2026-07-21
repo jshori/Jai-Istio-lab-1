@@ -242,6 +242,112 @@ That's the part that made everything click for me. Companies don't adopt Istio b
 
 None of these require changing application code. They're just rules, sitting outside the application, enforced consistently everywhere.
 
+## AuthorizationPolicy controls more than just who is allowed to talk
+
+The DENY policy above only shows the simplest version of what AuthorizationPolicy can do. It decided who is allowed to talk to httpbin, based on identity alone, curl-client, yes or no, nothing more specific than that.
+
+AuthorizationPolicy can actually go further than that. It can also decide what someone is allowed to do once they are talking to a service, down to the specific HTTP method or path, not just whether they can talk to it at all.
+
+I tried this next, allowing curl-client to make GET requests to httpbin, while blocking everything else, like POST:
+
+```yaml
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: httpbin-method-restriction
+  namespace: demo
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals: ["cluster.local/ns/demo/sa/default"]
+      to:
+        - operation:
+            methods: ["GET"]
+```
+
+```bash
+kubectl apply -f httpbin-method-restriction.yaml -n demo
+```
+
+Before trying this, there is one thing worth knowing upfront: rules based on HTTP methods or paths need a waypoint to work at all. Without one, this kind of rule does not just get ignored, it can block everything, including the traffic you meant to allow. Here is why.
+
+ztunnel is the always-on component that handles every mesh connection by default. It only understands two things: who is calling (identity), and which port they are calling on. It cannot read HTTP methods or paths at all, that is simply outside what it knows how to do. A waypoint is different. It is a full proxy that can actually read an HTTP request, its method, its path, its headers, and make decisions based on any of that. Method-based and path-based rules only make sense once a waypoint exists to actually check them.
+
+Given that, the first step is to deploy a waypoint for this namespace:
+
+```bash
+istioctl waypoint apply -n demo --enroll-namespace
+```
+
+```bash
+kubectl get gateway.gateway.networking.k8s.io -n demo
+kubectl get pods -n demo
+```
+
+```
+NAME       CLASS            ADDRESS       PROGRAMMED   AGE
+waypoint   istio-waypoint   10.96.53.69   True         17m
+
+NAME                       READY   STATUS    RESTARTS   AGE
+curl-client                1/1     Running   0          13d
+httpbin-7f7cc96bdb-4f28j   1/1     Running   0          13d
+waypoint-dd7bbc566-x2ggm   1/1     Running   0          17m
+```
+
+A brand new pod, `waypoint-dd7bbc566-x2ggm`, running specifically for this namespace. Waypoints are scoped one per namespace, so this one is entirely separate from any other waypoint used elsewhere in this series, it could not be reused, this namespace needed its own.
+
+With the waypoint in place, the next step is to update the policy so it actually attaches to the waypoint, using `targetRefs` instead of a plain `selector`:
+
+```yaml
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: httpbin-method-restriction
+  namespace: demo
+spec:
+  targetRefs:
+    - kind: Service
+      group: ""
+      name: httpbin
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals: ["cluster.local/ns/demo/sa/default"]
+      to:
+        - operation:
+            methods: ["GET"]
+```
+
+```bash
+kubectl apply -f httpbin-method-restriction.yaml -n demo
+```
+
+With the policy now attached to the waypoint, it was time to test both cases again: a GET request, which the policy allows, and a POST request, which it does not.
+
+```bash
+kubectl exec -n demo curl-client -- curl -s http://httpbin/get
+```
+
+```
+{"args":{},"headers":{"Accept":"*/*","Host":"httpbin","User-Agent":"curl/8.21.0"},"origin":"10.244.0.59","url":"http://httpbin/get"}
+```
+
+```bash
+kubectl exec -n demo curl-client -- curl -s -X POST http://httpbin/post
+```
+
+```
+RBAC: access denied
+```
+
+GET went through, POST was rejected, with a real, explicit RBAC message this time, rather than a plain connection reset, since the waypoint could actually read the request and made a genuine decision about it. Once the waypoint was in place, the exact same rule worked correctly.
+
 ## Where this connects to my actual job
 
 I work with multi-tenant Kubernetes platforms built on vCluster, where many isolated tenant clusters run on top of one shared cluster. A natural question came up while I was doing this lab: does every tenant need to install their own Istio?
